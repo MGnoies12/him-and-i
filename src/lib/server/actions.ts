@@ -1,3 +1,4 @@
+import { generatePairingCode, hashPairingCode } from './pairing';
 import 'server-only';
 import { randomBytes, createHash } from 'node:crypto';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
@@ -41,6 +42,31 @@ export async function performAction(
       const result = unwrap(await db.rpc('create_invitation', { hashed_token: hash }));
       return { invitation: result, url: `${origin}/invite/${token}` };
     }
+    case 'invitation.code.create': {
+      const generated = generatePairingCode();
+      const invitation = unwrap(
+        await db.rpc('create_pairing_code', { hashed_code: generated.hash }),
+      ) as unknown as { id: string; expires_at: string }[];
+      return { code: generated.code, invitation: invitation[0] };
+    }
+    case 'invitation.code.accept':
+      return unwrap(
+        await db.rpc('accept_invitation', { hashed_token: hashPairingCode(action.code) }),
+      );
+    case 'profile.complete':
+      return unwrap(
+        await db.rpc('complete_profile', {
+          person_name: action.fields.display_name,
+          person_gender: action.fields.gender,
+          chosen_layout: action.fields.layout,
+          person_locale: action.fields.locale,
+          person_timezone: action.fields.timezone,
+          track_cycle: action.fields.cycle_tracking,
+          period_start: action.fields.period_start,
+          reported_length: action.fields.reported_length,
+          irregular: action.fields.irregular,
+        }),
+      );
     case 'invitation.accept':
       return unwrap(
         await db.rpc('accept_invitation', {
@@ -214,6 +240,8 @@ export async function performAction(
         await db.from('cycle_settings').upsert({
           owner_id: user.id,
           prediction_enabled: action.prediction_enabled,
+          manual_length_confirmed: action.manual_length_confirmed,
+          cycles_irregular: action.cycles_irregular,
           cycle_length: action.cycle_length,
           period_length: action.period_length,
         }),

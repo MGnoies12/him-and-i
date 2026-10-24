@@ -25,6 +25,9 @@ test('missing configuration is honest and never reports a successful sign-in or 
   await page.goto('/signup');
   await expect(page.getByText('فضای شما، در انتظار اتصال امن')).toBeVisible();
   await expect(page.getByRole('button', { name: /ساخت حساب من/ })).toBeDisabled();
+  const health = await request.get('/api/health');
+  expect(health.status()).toBe(503);
+  expect(await health.json()).toEqual({ ready: false, mode: 'setup-required' });
   const data = await request.get('/api/data/memories');
   expect(data.status()).toBe(503);
   expect(await data.json()).toEqual({ error: 'configuration_required' });
@@ -53,6 +56,8 @@ const routes = [
   'games',
   'notifications',
   'settings',
+  'onboarding',
+  'pairing',
   'privacy',
 ];
 for (const route of routes) {
@@ -205,6 +210,8 @@ for (const route of [
   '/games',
   '/notifications',
   '/settings',
+  '/onboarding',
+  '/pairing',
   '/privacy',
   '/signup',
   '/reset-password',
@@ -229,3 +236,38 @@ for (const route of [
     ).toEqual([]);
   });
 }
+
+test('personalization previews both layouts without inventing accounts or enabling health collection in setup mode', async ({
+  page,
+}) => {
+  await page.goto('/onboarding');
+  await page.getByRole('button', { name: 'Switch to English' }).click();
+  await expect(page.getByRole('button', { name: 'Save and continue' })).toBeDisabled();
+  await expect(
+    page.getByRole('switch', { name: /I want private cycle tracking/ }),
+  ).not.toBeChecked();
+  await page.getByLabel('Gender (optional)').selectOption('male');
+  await expect(page.locator('.personalization-page')).toHaveAttribute(
+    'data-personal-theme',
+    'dusk',
+  );
+  const dark = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  expect(dark.violations).toEqual([]);
+  await page.getByLabel('Appearance and layout').selectOption('rose');
+  await expect(page.locator('.personalization-page')).toHaveAttribute(
+    'data-personal-theme',
+    'rose',
+  );
+  await expect(page.getByLabel(/First day of your last period/)).toHaveCount(0);
+});
+test('pairing offers separate join/create choices but cannot invent a working code in setup mode', async ({
+  page,
+}) => {
+  await page.goto('/pairing');
+  await page.getByRole('button', { name: 'Switch to English' }).click();
+  await expect(page.getByLabel(/The code your partner sent/)).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Connect and start chatting' })).toBeDisabled();
+  await page.getByRole('button', { name: 'I’ll send the invitation' }).click();
+  await expect(page.locator('.pairing-panel form button[type=submit]')).toBeDisabled();
+  await expect(page.getByRole('textbox', { name: 'Private pairing code' })).toHaveCount(0);
+});

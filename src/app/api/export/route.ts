@@ -7,6 +7,7 @@ export const maxDuration = 60;
 type Table = keyof Database['public']['Tables'];
 const accountTables: [Table, string[]][] = [
   ['profiles', ['id']],
+  ['profile_preferences', ['owner_id']],
   ['couples', ['id']],
   ['couple_members', ['couple_id', 'user_id']],
   ['conversations', ['id']],
@@ -31,6 +32,8 @@ const accountTables: [Table, string[]][] = [
   ['notification_preferences', ['owner_id']],
 ];
 const cycleTables: [Table, string[]][] = [
+  ['profile_preferences', ['owner_id']],
+  ['notification_preferences', ['owner_id']],
   ['period_records', ['id']],
   ['cycle_settings', ['owner_id']],
   ['cycle_reminders', ['id']],
@@ -55,10 +58,21 @@ export async function GET(request: Request) {
         yield ',' + JSON.stringify(table) + ':[';
         let first = true;
         for await (const rows of exportPages(async (offset, size) => {
+          // Health-related consent flags belong to the separate health export too.
+          const columns =
+            table === 'profile_preferences'
+              ? scope === 'cycle'
+                ? 'owner_id,cycle_tracking'
+                : 'owner_id,gender,layout,onboarding_completed_at'
+              : table === 'notification_preferences'
+                ? scope === 'cycle'
+                  ? 'owner_id,cycle'
+                  : 'owner_id,chat,letters,events,memories,push_enabled'
+                : '*';
           let query =
             table === 'notifications'
               ? db.from('notifications').select('*').neq('category', 'cycle')
-              : db.from(table).select('*');
+              : db.from(table).select(columns);
           for (const key of ordering) query = query.order(key);
           return requireData<unknown[] | null>(await query.range(offset, offset + size - 1));
         })) {

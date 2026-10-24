@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   loggingBehavior: 'none',
   server: remote
     ? {
-        url: new URL(remote).origin,
+        url: new URL('/home', remote).href,
         cleartext: false,
         errorPath: 'offline.html',
         allowNavigation: [new URL(remote).hostname],

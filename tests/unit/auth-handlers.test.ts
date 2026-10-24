@@ -9,6 +9,7 @@ const mock = vi.hoisted(() => ({
   update: vi.fn(),
   exchange: vi.fn(),
   verify: vi.fn(),
+  personal: vi.fn(),
 }));
 vi.mock('@/lib/supabase/server', () => ({ serverSupabase: mock.server }));
 import { POST } from '@/app/api/auth/route';
@@ -27,7 +28,12 @@ function post(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://couple.example');
+  mock.personal.mockResolvedValue({
+    data: { onboarding_completed_at: '2026-01-01T00:00:00Z' },
+    error: null,
+  });
   mock.server.mockResolvedValue({
+    from: () => ({ select: () => ({ maybeSingle: mock.personal }) }),
     auth: {
       signInWithPassword: mock.signIn,
       signUp: mock.signUp,
@@ -119,5 +125,40 @@ describe('real auth handler boundaries with an isolated provider mock', () => {
     expect(response.headers.get('location')).toBe(
       'https://couple.example/login?error=auth_callback',
     );
+  });
+});
+
+describe('private onboarding after real authentication', () => {
+  it('sends a newly authenticated person to preferences while retaining their invitation destination', async () => {
+    mock.signIn.mockResolvedValue({ error: null });
+    mock.personal.mockResolvedValue({ data: { onboarding_completed_at: null }, error: null });
+    const next = '/invite/' + 'A'.repeat(43);
+    const response = await post({
+      type: 'login',
+      email: 'fixture@example.com',
+      password: 'synthetic passphrase',
+      next,
+    });
+    expect(await response.json()).toEqual({
+      redirect: '/onboarding?next=' + encodeURIComponent(next),
+    });
+  });
+  it('sends only the name and optional gender to Auth, never period dates', async () => {
+    mock.signUp.mockResolvedValue({ data: { session: {} }, error: null });
+    const response = await post({
+      type: 'signup',
+      email: 'fixture@example.com',
+      password: 'synthetic long passphrase',
+      display_name: 'Synthetic person',
+      gender: 'female',
+      period_start: '2026-06-01',
+      reported_length: 29,
+    });
+    expect(response.status).toBe(200);
+    expect(mock.signUp.mock.calls[0][0].options.data).toEqual({
+      display_name: 'Synthetic person',
+      gender: 'female',
+    });
+    expect((await response.json()).redirect).toMatch(/^\/onboarding\?/);
   });
 });

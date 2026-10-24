@@ -113,6 +113,17 @@ export function SettingsScreen() {
                 <p dir="ltr">{query.data?.email || t('هنوز وارد نشده‌اید', 'Not signed in')}</p>
               </div>
             </div>
+            <LinkButton
+              href="/onboarding?next=/settings"
+              variant="secondary"
+              className="full-width profile-preferences-link"
+            >
+              <UserRound size={17} />
+              {t('جنسیت، ظاهر و پیگیری خصوصی', 'Gender, layout and private tracking')}
+            </LinkButton>
+            <LinkButton href="/cycle" variant="ghost" className="full-width">
+              {t('مدیریت یا حذف داده‌های خصوصی چرخه', 'Manage or delete private cycle data')}
+            </LinkButton>
             <form
               className="form-stack"
               onSubmit={form.handleSubmit(async (values) => {
@@ -255,12 +266,12 @@ export function SettingsScreen() {
               <>
                 <p className="panel-subtitle" style={{ marginTop: 0 }}>
                   {t(
-                    'هنوز به فضای مشترکی نپیوسته‌ای. از خانه شروع کنیم؟',
-                    'You haven’t joined a shared space yet. Shall we start at home?',
+                    'با کد همراهت متصل شو یا یک فضای دونفره بساز.',
+                    'Join using your partner’s code, or create a two-person space.',
                   )}
                 </p>
-                <LinkButton href="/home" variant="secondary">
-                  {t('ساخت فضای ما', 'Create our space')}
+                <LinkButton href="/pairing" variant="secondary">
+                  {t('اتصال با کد', 'Pair with a code')}
                 </LinkButton>
               </>
             )}

@@ -3,14 +3,20 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { genders } from '@/lib/personalization';
 import Link from 'next/link';
 import { Heart, Eye, EyeOff, Mail, LockKeyhole, CheckCircle2 } from 'lucide-react';
 import { useI18n, useWorkspace } from '@/components/providers';
 import { PublicHeader } from '@/components/layout/app-shell';
-import { Button, Field, SetupNotice, DirectionArrow } from '@/components/ui/primitives';
+import { Button, Field, Select, SetupNotice, DirectionArrow } from '@/components/ui/primitives';
 import { ClientError, errorText, requestJSON, broadcastSessionChange } from '@/lib/client-api';
 export type AuthMode = 'login' | 'signup' | 'reset' | 'password';
-const schema = z.object({ email: z.string(), password: z.string(), display_name: z.string() });
+const schema = z.object({
+  email: z.string(),
+  password: z.string(),
+  display_name: z.string(),
+  gender: z.enum(genders),
+});
 export function AuthScreen({
   mode,
   next,
@@ -27,7 +33,7 @@ export function AuthScreen({
   const [error, setError] = useState(errorCode ? errorText(new ClientError(errorCode), t) : '');
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '', display_name: '' },
+    defaultValues: { email: '', password: '', display_name: '', gender: 'unspecified' as const },
   });
   const headings = {
     login: t('خوش برگشتی،', 'Welcome back,'),
@@ -151,6 +157,32 @@ export function AuthScreen({
                     disabled={!ws.configured}
                   />
                 </Field>
+              )}
+              {mode === 'signup' && (
+                <>
+                  <Field
+                    label={t('جنسیت (اختیاری)', 'Gender (optional)')}
+                    hint={t(
+                      'فقط برای پیشنهاد ظاهر؛ همیشه قابل تغییر است.',
+                      'Only suggests a layout; you can always change it.',
+                    )}
+                  >
+                    <Select {...form.register('gender')} disabled={!ws.configured}>
+                      <option value="unspecified">
+                        {t('ترجیح می‌دهم نگویم', 'Prefer not to say')}
+                      </option>
+                      <option value="female">{t('زن / دختر', 'Woman / girl')}</option>
+                      <option value="male">{t('مرد / پسر', 'Man / boy')}</option>
+                      <option value="other">{t('دیگر', 'Another identity')}</option>
+                    </Select>
+                  </Field>
+                  <p className="field-hint">
+                    {t(
+                      'بعد از تأیید ایمیل، ظاهر حساب و پیگیری اختیاری چرخه را انتخاب می‌کنی. تاریخ پریود فقط پس از ورود، در بخش خصوصی ذخیره می‌شود.',
+                      'After email confirmation, choose your layout and optional cycle tracking. Period dates are saved only after sign-in, in your private space.',
+                    )}
+                  </p>
+                </>
               )}
               {mode !== 'password' && (
                 <Field

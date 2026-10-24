@@ -1,3 +1,5 @@
+import { genders, layouts } from '@/lib/personalization';
+import { normalizePairingCode, pairingPattern } from '@/lib/pairing';
 import { z } from 'zod';
 import { safeExternalLink } from '@/lib/config';
 const id = z.uuid();
@@ -59,10 +61,38 @@ const preferences = z.object({
   push_enabled: z.boolean(),
 });
 const simpleId = (type: string) => z.object({ type: z.literal(type), id });
+export const profileSetupFields = z
+  .object({
+    display_name: z.string().trim().min(1).max(60),
+    gender: z.enum(genders),
+    layout: z.enum(layouts),
+    locale: z.enum(['fa', 'en']),
+    timezone: timezoneSchema,
+    cycle_tracking: z.boolean(),
+    period_start: z.iso.date().nullable(),
+    reported_length: z.number().int().min(15).max(90).nullable(),
+    irregular: z.boolean(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.period_start && !value.cycle_tracking)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cycle_tracking'],
+        message: 'Private cycle tracking consent is required to save a period date.',
+      });
+    if (value.reported_length !== null && !value.period_start)
+      ctx.addIssue({ code: 'custom', path: ['period_start'], message: 'A start date is needed.' });
+  });
 export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('couple.create'), relationship_start: date.nullable().default(null) }),
   z.object({ type: z.literal('couple.update'), relationship_start: date.nullable() }),
   z.object({ type: z.literal('invitation.create') }),
+  z.object({ type: z.literal('invitation.code.create') }),
+  z.object({
+    type: z.literal('invitation.code.accept'),
+    code: z.string().max(40).transform(normalizePairingCode).pipe(z.string().regex(pairingPattern)),
+  }),
+  z.object({ type: z.literal('profile.complete'), fields: profileSetupFields }),
   z.object({ type: z.literal('invitation.revoke'), id }),
   z.object({
     type: z.literal('invitation.accept'),
@@ -119,6 +149,8 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cycle.record.delete'), id }),
   z.object({
     type: z.literal('cycle.settings'),
+    manual_length_confirmed: z.boolean().default(false),
+    cycles_irregular: z.boolean().default(false),
     prediction_enabled: z.boolean(),
     cycle_length: z.number().int().min(15).max(90),
     period_length: z.number().int().min(1).max(15),
@@ -185,6 +217,7 @@ export const authSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('signup'),
+    gender: z.enum(genders).default('unspecified'),
     email: z.email().max(254),
     password: z.string().min(12).max(128),
     display_name: z.string().trim().min(1).max(60),

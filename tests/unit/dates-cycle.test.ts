@@ -114,6 +114,7 @@ describe('opt-in, explicitly approximate cycle estimates', () => {
       [{ start_date: '2026-01-01' }, { start_date: '2026-01-31' }],
       true,
       29,
+      true,
     );
     expect(result).toMatchObject({ date: '2026-03-01', basis: 'preference', length: 29 });
   });

@@ -878,3 +878,215 @@ describe('calendar, notification preferences and reveal-protected games', () => 
     ).rejects.toThrow(/permission denied/);
   });
 });
+
+describe('private profile setup and short-lived pairing', () => {
+  const complete =
+    "select public.complete_profile('Synthetic name','female','auto','fa','UTC',true,date '2026-06-01',29,false)";
+  it('only exposes each person’s own presentation preferences, never their partner’s', async () => {
+    expect(
+      await as(users.b, 'select * from public.profile_preferences where owner_id=$1', [users.a]),
+    ).toEqual([]);
+    expect(
+      await as(users.c, 'select * from public.profile_preferences where owner_id=$1', [users.a]),
+    ).toEqual([]);
+    expect(
+      await as(
+        users.b,
+        "update public.profile_preferences set gender='male' where owner_id=$1 returning owner_id",
+        [users.a],
+      ),
+    ).toEqual([]);
+    await expect(
+      as(users.a, 'update public.profile_preferences set owner_id=$1 where owner_id=$2', [
+        users.e,
+        users.a,
+      ]),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      as(users.a, 'update public.profile_preferences set onboarding_completed_at=now()'),
+    ).rejects.toThrow(/permission denied/);
+  });
+  it('bootstraps non-health preferences but never imports period dates from Auth metadata', async () => {
+    const id = '56789012-3456-4789-8123-456789abcdef';
+    await db.query('insert into auth.users(id,raw_user_meta_data) values($1,$2)', [
+      id,
+      JSON.stringify({
+        display_name: 'Synthetic newcomer',
+        gender: 'female',
+        period_start: '2026-06-01',
+      }),
+    ]);
+    expect(
+      (await as(id, 'select gender,cycle_tracking from public.profile_preferences'))[0],
+    ).toEqual({ gender: 'female', cycle_tracking: false });
+    expect(await as(id, 'select * from public.period_records')).toEqual([]);
+  });
+  it('atomically completes a profile and stores an optional date only in owner-private health tables', async () => {
+    await as(users.a, complete);
+    expect(
+      (
+        await as(
+          users.a,
+          'select gender,cycle_tracking,onboarding_completed_at is not null as done from public.profile_preferences',
+        )
+      )[0],
+    ).toEqual({ gender: 'female', cycle_tracking: true, done: true });
+    expect(
+      (
+        await as(
+          users.a,
+          'select prediction_enabled,manual_length_confirmed,cycle_length from public.cycle_settings',
+        )
+      )[0],
+    ).toEqual({ prediction_enabled: true, manual_length_confirmed: true, cycle_length: 29 });
+    expect(await as(users.a, 'select * from public.period_records')).toHaveLength(1);
+    expect(
+      await as(users.b, 'select * from public.period_records where owner_id=$1', [users.a]),
+    ).toEqual([]);
+    expect(await as(users.b, 'select * from public.get_partner_cycle_share()')).toEqual([]);
+    expect(
+      (
+        await db.query<{ raw_user_meta_data: Record<string, unknown> }>(
+          'select raw_user_meta_data from auth.users where id=$1',
+          [users.a],
+        )
+      ).rows[0].raw_user_meta_data,
+    ).not.toHaveProperty('period_start');
+  });
+  it('rolls back profile and preferences when a future period date is rejected', async () => {
+    await expect(as(users.e, complete.replace('2026-06-01', '2999-06-01'))).rejects.toThrow(
+      'invalid_date',
+    );
+    expect(
+      (await as(users.e, 'select display_name from public.profiles where id=$1', [users.e]))[0]
+        .display_name,
+    ).toBe('Test e');
+    expect(
+      (
+        await as(
+          users.e,
+          'select onboarding_completed_at,cycle_tracking from public.profile_preferences',
+        )
+      )[0],
+    ).toEqual({ onboarding_completed_at: null, cycle_tracking: false });
+    expect(await as(users.e, 'select * from public.period_records')).toEqual([]);
+  });
+  it('can save a date without a known length or estimate, and never treats gender as authorization', async () => {
+    await as(
+      users.e,
+      "select public.complete_profile('Synthetic person','male','dusk','en','UTC',true,date '2026-06-01',null,false)",
+    );
+    expect(await as(users.e, 'select * from public.period_records')).toHaveLength(1);
+    expect(
+      (
+        await as(
+          users.e,
+          'select prediction_enabled,manual_length_confirmed,cycles_irregular from public.cycle_settings',
+        )
+      )[0],
+    ).toEqual({
+      prediction_enabled: false,
+      manual_length_confirmed: false,
+      cycles_irregular: false,
+    });
+  });
+  it('disables predictions for explicitly irregular cycles', async () => {
+    await as(users.e, complete.replace('29,false', 'null,true'));
+    expect(
+      (
+        await as(users.e, 'select prediction_enabled,cycles_irregular from public.cycle_settings')
+      )[0],
+    ).toEqual({ prediction_enabled: false, cycles_irregular: true });
+  });
+  it('disabling the module revokes minimal sharing and reminders without silently deleting history', async () => {
+    await as(users.a, complete);
+    await as(
+      users.a,
+      "update public.cycle_sharing_preferences set share_status=true,status_text='Synthetic opt-in' where owner_id=$1",
+      [users.a],
+    );
+    await as(
+      users.a,
+      "insert into public.cycle_reminders(owner_id,kind,due_at,timezone,enabled) values($1,'log',now()+interval '1 day','UTC',true)",
+      [users.a],
+    );
+    expect(await as(users.b, 'select * from public.get_partner_cycle_share()')).toHaveLength(1);
+    await as(
+      users.a,
+      'update public.profile_preferences set cycle_tracking=false where owner_id=$1',
+      [users.a],
+    );
+    expect(await as(users.b, 'select * from public.get_partner_cycle_share()')).toEqual([]);
+    expect((await as(users.a, 'select enabled from public.cycle_reminders'))[0].enabled).toBe(
+      false,
+    );
+    expect(
+      (await as(users.a, 'select prediction_enabled from public.cycle_settings'))[0]
+        .prediction_enabled,
+    ).toBe(false);
+    expect(await as(users.a, 'select * from public.period_records')).toHaveLength(1);
+  });
+  it('explicit cycle erasure also clears tracking and manual-length consent', async () => {
+    await as(users.a, complete);
+    await as(users.a, 'select public.delete_cycle_data()');
+    expect(await as(users.a, 'select * from public.period_records')).toEqual([]);
+    expect(
+      (await as(users.a, 'select cycle_tracking from public.profile_preferences'))[0]
+        .cycle_tracking,
+    ).toBe(false);
+    expect(
+      (await as(users.a, 'select manual_length_confirmed from public.cycle_settings'))[0]
+        .manual_length_confirmed,
+    ).toBe(false);
+  });
+  it('creates only a 15-minute hash-backed code and uses the same authenticated single-use membership boundary', async () => {
+    const solo = await soloInvitation();
+    const hash = '4'.repeat(64);
+    await as(users.e, 'select * from public.create_pairing_code($1)', [hash]);
+    const rows = (
+      await db.query<{ short: boolean; token_hash: string }>(
+        "select expires_at=now()+interval '15 minutes' as short,token_hash from public.invitations where token_hash=$1",
+        [hash],
+      )
+    ).rows;
+    expect(rows).toEqual([{ short: true, token_hash: hash }]);
+    await expect(as(users.f, 'select public.accept_invitation($1)', [solo.hash])).rejects.toThrow(
+      'invalid_invitation',
+    );
+    expect((await as(users.f, 'select public.accept_invitation($1) as id', [hash]))[0].id).toBe(
+      solo.couple,
+    );
+    await expect(as(users.g, 'select public.accept_invitation($1)', [hash])).rejects.toThrow(
+      'invalid_invitation',
+    );
+  });
+  it('rejects expired codes and never consumes a membership slot', async () => {
+    const solo = await soloInvitation();
+    const hash = '4'.repeat(64);
+    await as(users.e, 'select * from public.create_pairing_code($1)', [hash]);
+    await db.query(
+      "update public.invitations set created_at=now()-interval '16 minutes',expires_at=now()-interval '1 minute' where token_hash=$1",
+      [hash],
+    );
+    await expect(as(users.f, 'select public.accept_invitation($1)', [hash])).rejects.toThrow(
+      'invalid_invitation',
+    );
+    expect(
+      (
+        await db.query<{ n: number }>(
+          'select count(*)::int as n from public.couple_members where couple_id=$1',
+          [solo.couple],
+        )
+      ).rows[0].n,
+    ).toBe(1);
+  });
+  it('creating a new link also revokes an older typing code', async () => {
+    await soloInvitation();
+    await as(users.e, 'select * from public.create_pairing_code($1)', ['4'.repeat(64)]);
+    await as(users.e, 'select * from public.create_invitation($1)', ['5'.repeat(64)]);
+    await expect(
+      as(users.f, 'select public.accept_invitation($1)', ['4'.repeat(64)]),
+    ).rejects.toThrow('invalid_invitation');
+    await as(users.f, 'select public.accept_invitation($1)', ['5'.repeat(64)]);
+  });
+});

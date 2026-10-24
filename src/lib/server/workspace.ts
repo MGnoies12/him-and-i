@@ -8,6 +8,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     configured: !!db,
     userId: null,
     profile: null,
+    personalization: null,
     couple: null,
     members: [],
     conversationId: null,
@@ -18,12 +19,20 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     error,
   } = await db.auth.getUser();
   if (error || !user) return empty;
-  const [profile, membership] = await Promise.all([
+  const [profile, membership, personalization] = await Promise.all([
     db.from('profiles').select('*').eq('id', user.id).single(),
     db.from('couple_members').select('couple_id').eq('user_id', user.id).maybeSingle(),
+    db.from('profile_preferences').select('*').eq('owner_id', user.id).single(),
   ]);
-  if (profile.error || membership.error) return { ...empty, userId: user.id, error: true };
-  if (!membership.data) return { ...empty, userId: user.id, profile: profile.data };
+  if (profile.error || membership.error || personalization.error)
+    return { ...empty, userId: user.id, error: true };
+  if (!membership.data)
+    return {
+      ...empty,
+      userId: user.id,
+      profile: profile.data,
+      personalization: personalization.data,
+    };
   const coupleId = membership.data.couple_id;
   const [couple, members, conversation] = await Promise.all([
     db.from('couples').select('*').eq('id', coupleId).single(),
@@ -34,6 +43,7 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
     ...empty,
     userId: user.id,
     profile: profile.data,
+    personalization: personalization.data,
     couple: couple.data,
     members:
       members.data?.map((m) => m.profiles).filter((p): p is NonNullable<typeof p> => p !== null) ??

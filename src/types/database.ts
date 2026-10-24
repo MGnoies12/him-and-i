@@ -89,12 +89,16 @@ export interface Database { public: { Tables: {
         prediction_enabled: boolean;
         cycle_length: number;
         period_length: number;
+        manual_length_confirmed: boolean;
+        cycles_irregular: boolean;
       };
       Insert: {
         owner_id: string;
         prediction_enabled?: boolean;
         cycle_length?: number;
         period_length?: number;
+        manual_length_confirmed?: boolean;
+        cycles_irregular?: boolean;
       };
       Update: Partial<Database['public']['Tables']['cycle_settings']['Insert']>;
       Relationships: [{ foreignKeyName: 'cycle_settings_owner_id_fkey'; columns: ['owner_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }];
@@ -552,6 +556,24 @@ export interface Database { public: { Tables: {
       };
       Update: Partial<Database['public']['Tables']['playlists']['Insert']>;
       Relationships: [{ foreignKeyName: 'playlists_couple_id_fkey'; columns: ['couple_id']; isOneToOne: false; referencedRelation: 'couples'; referencedColumns: ['id'] },{ foreignKeyName: 'playlists_creator_id_fkey'; columns: ['creator_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }];
+    };
+    profile_preferences: {
+      Row: {
+        owner_id: string;
+        gender: string;
+        layout: string;
+        cycle_tracking: boolean;
+        onboarding_completed_at: string | null;
+      };
+      Insert: {
+        owner_id: string;
+        gender?: string;
+        layout?: string;
+        cycle_tracking?: boolean;
+        onboarding_completed_at?: string | null;
+      };
+      Update: Partial<Database['public']['Tables']['profile_preferences']['Insert']>;
+      Relationships: [{ foreignKeyName: 'profile_preferences_owner_id_fkey'; columns: ['owner_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] }];
     };
     profiles: {
       Row: {

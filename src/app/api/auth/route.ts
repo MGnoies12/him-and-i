@@ -25,15 +25,25 @@ export async function POST(request: Request) {
             error.code === 'email_not_confirmed' ? 'email_not_confirmed' : 'invalid_credentials',
             401,
           );
-        return NextResponse.json({ redirect: safeRedirect(input.next) });
+        const personal = await db
+          .from('profile_preferences')
+          .select('onboarding_completed_at')
+          .maybeSingle();
+        if (personal.error) throw new ApiError('server_configuration_required', 503);
+        const destination = safeRedirect(input.next);
+        return NextResponse.json({
+          redirect: personal.data?.onboarding_completed_at
+            ? destination
+            : '/onboarding?next=' + encodeURIComponent(destination),
+        });
       }
       case 'signup': {
-        const next = safeRedirect(input.next);
+        const next = '/onboarding?next=' + encodeURIComponent(safeRedirect(input.next));
         const { data, error } = await db.auth.signUp({
           email: input.email,
           password: input.password,
           options: {
-            data: { display_name: input.display_name },
+            data: { display_name: input.display_name, gender: input.gender },
             emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
           },
         });

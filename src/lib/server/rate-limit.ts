@@ -18,7 +18,11 @@ function consume(key: string, budget: number, windowMs: number) {
   if (row.count > budget) throw new ApiError('rate_limited', 429);
 }
 
-export function limitUserAction(id: string, scope: 'mutation' | 'upload') {
+export function limitUserAction(id: string, scope: 'mutation' | 'upload' | 'pairing') {
   const key = createHash('sha256').update(`${scope}:${id}`).digest('hex');
-  consume(key, scope === 'upload' ? 30 : 240, scope === 'upload' ? 3600000 : 60000);
+  consume(
+    key,
+    scope === 'upload' ? 30 : scope === 'pairing' ? 10 : 240,
+    scope === 'upload' ? 3600000 : 60000,
+  );
 }

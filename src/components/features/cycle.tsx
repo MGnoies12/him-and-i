@@ -143,6 +143,8 @@ function CycleSettings({ data }: { data: CycleData | undefined }) {
   const toast = useToast();
   const [enabled, setEnabled] = useState(data?.settings?.prediction_enabled || false);
   const [length, setLength] = useState(data?.settings?.cycle_length || 28);
+  const [manual, setManual] = useState(data?.settings?.manual_length_confirmed || false);
+  const [irregular, setIrregular] = useState(data?.settings?.cycles_irregular || false);
   const [duration, setDuration] = useState(data?.settings?.period_length || 5);
   const [shareStatus, setShareStatus] = useState(data?.sharing?.share_status || false);
   const [shareDate, setShareDate] = useState(data?.sharing?.share_estimate || false);
@@ -163,6 +165,8 @@ function CycleSettings({ data }: { data: CycleData | undefined }) {
             const result = await action.run({
               type: 'cycle.settings',
               prediction_enabled: enabled,
+              manual_length_confirmed: manual,
+              cycles_irregular: irregular,
               cycle_length: length,
               period_length: duration,
             });
@@ -175,8 +179,27 @@ function CycleSettings({ data }: { data: CycleData | undefined }) {
             disabled={!canSave}
             label={t('نمایش تخمین دوره‌ی بعد', 'Show an estimated next period')}
             description={t(
-              'خاموش به‌صورت پیش‌فرض. حداقل دو شروع ثبت‌شده لازم است.',
-              'Off by default. At least two recorded start dates are needed.',
+              'خاموش به‌صورت پیش‌فرض. دو تاریخ شروع، یا یک تاریخ همراه با طول چرخهٔ تأییدشدهٔ خودت لازم است.',
+              'Off by default. Requires two start dates, or one date with your explicitly confirmed usual cycle length.',
+            )}
+          />
+          <Toggle
+            checked={manual}
+            onChange={setManual}
+            disabled={!canSave}
+            label={t('از طول معمولی که خودم می‌دانم استفاده کن', 'Use my known usual cycle length')}
+            description={t(
+              'فقط اگر این مقدار را می‌دانی؛ با یک تاریخ هم برآورد تقریبی ممکن می‌شود.',
+              'Only if you know this length; it allows an approximate estimate from one date.',
+            )}
+          />
+          <Toggle
+            checked={irregular}
+            onChange={setIrregular}
+            disabled={!canSave}
+            label={t(
+              'چرخه‌هایم نامنظم‌اند؛ تاریخ بعدی را برآورد نکن',
+              'My cycles are irregular; don’t estimate a next date',
             )}
           />
           <div className="form-grid">
@@ -446,6 +469,8 @@ export function CycleScreen() {
     data?.records || [],
     data?.settings?.prediction_enabled || false,
     data?.settings?.cycle_length || 28,
+    data?.settings?.manual_length_confirmed || false,
+    data?.settings?.cycles_irregular || false,
   );
   const periodDays = (data?.records || []).flatMap((r) => {
     const days: string[] = [];
@@ -599,14 +624,19 @@ export function CycleScreen() {
               <h2>
                 {!data?.settings?.prediction_enabled
                   ? t('پیش‌بینی خاموش است.', 'Predictions are turned off.')
-                  : !estimate
-                    ? t('هنوز اطلاعات کافی نداریم.', 'There isn’t enough history yet.')
-                    : estimate.date < todayISO(timezone)
-                      ? t('این تخمین در گذشته است.', 'This estimate is in the past.')
-                      : t(
-                          `حدود ${formatDate(estimate.date, locale, 'UTC')}`,
-                          `Around ${formatDate(estimate.date, locale, 'UTC')}`,
-                        )}
+                  : data?.settings?.cycles_irregular
+                    ? t(
+                        'برآورد برای چرخهٔ نامنظم خاموش است.',
+                        'No date is estimated for irregular cycles.',
+                      )
+                    : !estimate
+                      ? t('هنوز اطلاعات کافی نداریم.', 'There isn’t enough history yet.')
+                      : estimate.date < todayISO(timezone)
+                        ? t('این تخمین در گذشته است.', 'This estimate is in the past.')
+                        : t(
+                            `حدود ${formatDate(estimate.date, locale, 'UTC')}`,
+                            `Around ${formatDate(estimate.date, locale, 'UTC')}`,
+                          )}
               </h2>
               <p>
                 {estimate?.date && estimate.date < todayISO(timezone)
@@ -620,10 +650,18 @@ export function CycleScreen() {
                         'This is only an estimate; cycle length and timing can vary.',
                       )
                     : t(
-                        'اگر بخواهی، در بخش انتخاب‌ها فعالش کن. حداقل دو شروع ثبت‌شده لازم است.',
-                        'You can enable it in My choices. At least two recorded starts are needed.',
+                        'برای برآورد، دو شروع ثبت‌شده یا یک شروع همراه با طول معمولی که خودت تأیید کرده‌ای لازم است.',
+                        'An estimate needs two recorded starts, or one start with your explicitly confirmed usual length.',
                       )}
               </p>
+              {estimate?.basis === 'preference' && (
+                <p className="field-hint">
+                  {t(
+                    'مبنا: طول چرخه‌ای که خودت تأیید کرده‌ای، نه اندازه‌گیری پزشکی.',
+                    'Based on your explicitly confirmed cycle length, not a medical measurement.',
+                  )}
+                </p>
+              )}
               {estimate?.irregular && (
                 <p style={{ marginTop: 10 }}>
                   {t(

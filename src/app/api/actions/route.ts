@@ -8,7 +8,15 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const { db, user } = await requireUser();
     limitUserAction(user.id, 'mutation');
-    const action = actionSchema.parse(await readJSONBody(request));
+    const body = await readJSONBody(request);
+    if (
+      body &&
+      typeof body === 'object' &&
+      'type' in body &&
+      body.type === 'invitation.code.accept'
+    )
+      limitUserAction(user.id, 'pairing');
+    const action = actionSchema.parse(body);
     const data = await performAction(
       db,
       user,

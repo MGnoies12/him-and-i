@@ -79,6 +79,20 @@ export function HomeScreen() {
         </span>
       </div>
       <SetupNotice />
+      {ws.userId && !ws.personalization?.onboarding_completed_at && (
+        <div className="notice">
+          <UserRound size={18} />
+          <p>
+            {t(
+              'قبل از اتصال، حساب را به سلیقهٔ خودت تنظیم کن.',
+              'Before pairing, make this account feel like you.',
+            )}
+          </p>
+          <LinkButton href="/onboarding" variant="secondary">
+            {t('تکمیل مشخصات', 'Set up my profile')}
+          </LinkButton>
+        </div>
+      )}
       <Onboarding />
       {query.isError && <ErrorState error={query.error} retry={() => void query.refetch()} />}{' '}
       {query.isLoading ? (

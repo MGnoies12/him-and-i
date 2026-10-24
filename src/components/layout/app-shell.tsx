@@ -23,12 +23,14 @@ import {
   Menu,
   X,
   BookHeart,
+  UsersRound,
 } from 'lucide-react';
 import { useI18n, useWorkspace } from '@/components/providers';
 import { Modal, Button, ErrorState } from '@/components/ui/primitives';
 import { useData, useRealtime } from '@/hooks/use-data';
 import { formatDate } from '@/lib/dates';
 import { NativeBridge } from './native-bridge';
+import { personalTheme, personalNavigation } from '@/lib/personalization';
 export const navItems = [
   { href: '/home', fa: 'خانه‌ی ما', en: 'Our home', icon: House },
   { href: '/memories', fa: 'خاطره‌ها', en: 'Memories', icon: Images },
@@ -64,6 +66,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t, locale, setLocale, timezone } = useI18n();
   const ws = useWorkspace();
   const path = usePathname();
+  const theme = personalTheme(ws.personalization?.gender, ws.personalization?.layout);
+  const orderedNav = personalNavigation(theme, ws.personalization?.cycle_tracking ?? false).map(
+    (href) => navItems.find((item) => item.href === href)!,
+  );
+  const mobileNav =
+    theme === 'dusk'
+      ? [navItems[0], navItems[2], navItems[7], navItems[1]]
+      : [navItems[0], navItems[1], navItems[2], navItems[4]];
   const [menu, setMenu] = useState(false);
   const online = useSyncExternalStore(
     subscribeOnline,
@@ -81,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <>
         <div className="nav-label">{t('دنیای دونفره‌ی ما', 'OUR LITTLE WORLD')}</div>
         <nav aria-label={t('ناوبری اصلی', 'Main navigation')}>
-          {navItems.map((item) => (
+          {orderedNav.map((item) => (
             <Link
               href={item.href}
               key={item.href}
@@ -101,6 +111,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="nav-divider" />
         <nav aria-label={t('حساب کاربری', 'Your account')}>
+          <Link
+            href="/pairing"
+            className={`nav-link ${path === '/pairing' ? 'active' : ''}`}
+            onClick={() => setMenu(false)}
+          >
+            <UsersRound size={20} strokeWidth={1.6} />
+            <span>{t('اتصال با کد', 'Pair with a code')}</span>
+          </Link>
+
           <Link
             href="/notifications"
             className={`nav-link ${path === '/notifications' ? 'active' : ''}`}
@@ -123,7 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-personal-theme={theme}>
       <a className="skip-link" href="#main-content">
         {t('رفتن به محتوای اصلی', 'Skip to content')}
       </a>
@@ -166,9 +185,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <strong>
               {active
                 ? t(active.fa, active.en)
-                : path === '/settings'
-                  ? t('تنظیمات', 'Settings')
-                  : t('اعلان‌ها', 'Notifications')}
+                : path === '/pairing'
+                  ? t('اتصال دونفره', 'Pairing')
+                  : path === '/onboarding'
+                    ? t('انتخاب‌های من', 'My preferences')
+                    : path === '/settings'
+                      ? t('تنظیمات', 'Settings')
+                      : t('اعلان‌ها', 'Notifications')}
             </strong>
           </div>
           <div className="topbar-tools">
@@ -237,7 +260,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </footer>
       </div>
       <nav className="bottom-nav" aria-label={t('ناوبری موبایل', 'Mobile navigation')}>
-        {[navItems[0], navItems[1], navItems[2], navItems[4]].map((item) => (
+        {mobileNav.map((item) => (
           <Link
             key={item.href}
             href={item.href}

@@ -33,7 +33,8 @@ export function useAction() {
       if (
         action.type.startsWith('couple.') ||
         action.type.startsWith('invitation.') ||
-        action.type === 'profile.save'
+        action.type.startsWith('profile.') ||
+        action.type === 'cycle.delete'
       )
         router.refresh();
     },

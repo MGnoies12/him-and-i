@@ -23,6 +23,7 @@ export interface Workspace {
   configured: boolean;
   userId: string | null;
   profile: Profile | null;
+  personalization?: Row<'profile_preferences'> | null;
   couple: Row<'couples'> | null;
   members: Profile[];
   conversationId: string | null;
