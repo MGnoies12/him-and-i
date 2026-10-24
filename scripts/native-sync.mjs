@@ -11,7 +11,7 @@ if (origin) {
   if (url.protocol !== 'https:' || url.username || url.password)
     throw new Error('Use a trusted HTTPS origin without credentials.');
 }
-const appId = process.env.CAPACITOR_APP_ID || 'com.example.himandi';
+const appId = process.env.CAPACITOR_APP_ID || 'io.github.mgnoies12.himandi';
 if (!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*){2,}$/.test(appId))
   throw new Error('Use a reverse-DNS application identifier.');
 const escaped = appId.replaceAll('.', '\\.');

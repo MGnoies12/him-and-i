@@ -18,7 +18,7 @@ Copy `.env.example` to ignored `.env.local` for local work, or set these in your
 | `VAPID_PRIVATE_KEY`                    | **Server secret**, optional | Web Push delivery worker                                                                                                        |
 | `VAPID_SUBJECT`                        | Operator contact, optional  | Valid `mailto:`/HTTPS contact for VAPID                                                                                         |
 | `CAPACITOR_SERVER_URL`                 | Native build configuration  | Trusted HTTPS web origin, not an API credential                                                                                 |
-| `CAPACITOR_APP_ID`                     | Native build configuration  | Must match both committed platform IDs; initial placeholder `com.example.himandi`                                               |
+| `CAPACITOR_APP_ID`                     | Native build configuration  | Must match both committed platform IDs; initial placeholder `io.github.mgnoies12.himandi`                                       |
 
 Generate a cron secret locally with `openssl rand -hex 32` and store the result directly in the host's secret manager. Generate VAPID keys with the installed tool (`npx web-push generate-vapid-keys`) in a private local terminal; never commit/log the private key.
 

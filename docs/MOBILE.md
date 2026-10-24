@@ -18,10 +18,10 @@ The Next.js server/API cannot be statically exported into Capacitor. The configu
 
 ## Choose identifiers and trusted origin
 
-Initial placeholders are `com.example.himandi` and `himandi.example`; they are not claimed as real registrations.
+Initial placeholders are `io.github.mgnoies12.himandi` and `himandi.example`; they are not claimed as real registrations.
 
 1. Choose your own reverse-DNS app identifier and domain.
-2. In Android Studio, refactor `com.example.himandi`, including `MainActivity.java` and its package path; update `namespace` and `applicationId` in `android/app/build.gradle`. Check manifest references.
+2. In Android Studio, refactor `io.github.mgnoies12.himandi`, including `MainActivity.java` and its package path; update `namespace` and `applicationId` in `android/app/build.gradle`. Check manifest references.
 3. In Xcode, change both build configurations' `PRODUCT_BUNDLE_IDENTIFIER` and select the real team. Check signing entitlements.
 4. Set the matching `CAPACITOR_APP_ID` and your real `CAPACITOR_SERVER_URL` in ignored `.env.local`, or supply them as environment variables. The sync script validates that both committed native identifiers match; changing only an environment variable is not a native rename.
 5. Run:

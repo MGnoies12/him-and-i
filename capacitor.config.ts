@@ -3,7 +3,7 @@ const remote = process.env.CAPACITOR_SERVER_URL;
 if (remote && new URL(remote).protocol !== 'https:')
   throw new Error('CAPACITOR_SERVER_URL must be a trusted HTTPS origin.');
 const config: CapacitorConfig = {
-  appId: process.env.CAPACITOR_APP_ID || 'com.example.himandi',
+  appId: process.env.CAPACITOR_APP_ID || 'io.github.mgnoies12.himandi',
   appName: 'HIM & I',
   webDir: 'native-web',
   // Bridge messages can carry device tokens or user-requested health export contents.
