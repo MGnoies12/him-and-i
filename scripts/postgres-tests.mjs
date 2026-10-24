@@ -210,6 +210,25 @@ try {
   console.log(
     'PASS: simultaneous partner account deletion erases the empty space and its relationship metadata.',
   );
+  const deletingSpace = await space();
+  const racingJoiner = await user();
+  const racingToken = await invite(deletingSpace.owner);
+  const deletionRace = await Promise.allSettled([
+    pool.query('delete from auth.users where id=$1', [deletingSpace.owner]),
+    attempt(racingJoiner, racingToken),
+  ]);
+  assert.equal(deletionRace[0].status, 'fulfilled');
+  if (deletionRace[1].status === 'rejected')
+    assert.equal(deletionRace[1].reason.message, 'invalid_invitation');
+  const membersAfter = (
+    await pool.query('select user_id from public.couple_members where couple_id=$1', [
+      deletingSpace.couple,
+    ])
+  ).rows;
+  assert.equal(membersAfter.length, deletionRace[1].status === 'fulfilled' ? 1 : 0);
+  console.log(
+    'PASS: inviter account deletion and invite acceptance have consistent lock ordering without deadlocks.',
+  );
   console.log('All real PostgreSQL concurrency checks passed.');
 } finally {
   // Pool.end removes idle clients before their sockets have necessarily finished closing.
