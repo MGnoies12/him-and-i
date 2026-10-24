@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.arena/
+android/
+ios/
+playwright-report/
+test-results/
+coverage/
+supabase/
+public/images/
+public/icons/
+src/types/database.ts
+package-lock.json
+
+next-env.d.ts

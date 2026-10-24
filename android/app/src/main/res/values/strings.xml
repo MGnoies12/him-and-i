@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HIM &amp; I</string>
+    <string name="title_activity_main">HIM &amp; I</string>
+    <string name="package_name">com.example.himandi</string>
+    <string name="custom_url_scheme">com.example.himandi</string>
+</resources>
