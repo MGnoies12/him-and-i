@@ -1,9 +1,14 @@
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-const origin = process.env.CAPACITOR_SERVER_URL || '';
+const origin = process.env.CAPACITOR_SERVER_URL?.trim() || '';
 const mode = origin ? 'configured' : 'setup';
 if (origin) {
-  const url = new URL(origin);
+  let url;
+  try {
+    url = new URL(origin);
+  } catch {
+    throw new Error('CAPACITOR_SERVER_URL must be a trusted HTTPS origin.');
+  }
   if (
     url.protocol !== 'https:' ||
     url.username ||
@@ -27,7 +32,15 @@ if (origin) {
 const run = Number(process.env.GITHUB_RUN_NUMBER || 1);
 const attempt = Number(process.env.GITHUB_RUN_ATTEMPT || 1);
 const code = 10000 + run * 100 + attempt;
-if (!Number.isSafeInteger(code) || code > 2100000000 || run < 1 || attempt < 1 || attempt >= 100)
+if (
+  !Number.isSafeInteger(run) ||
+  !Number.isSafeInteger(attempt) ||
+  !Number.isSafeInteger(code) ||
+  code > 2100000000 ||
+  run < 1 ||
+  attempt < 1 ||
+  attempt >= 100
+)
   throw new Error('Invalid build version.');
 const gradle = 'android/app/build.gradle';
 let source = readFileSync(gradle, 'utf8');
@@ -38,6 +51,7 @@ const metadata = {
   app: 'HIM & I',
   mode,
   version: `0.2.${run}.${attempt}`,
+  version_code: code,
   commit: process.env.GITHUB_SHA || 'local',
   origin: origin || null,
   signing: 'debug, testing only',

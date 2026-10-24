@@ -4,7 +4,15 @@
 
 A Persian-first, RTL/LTR couples application: warm scrapbook design, real Supabase persistence and authorization, and Android/iOS Capacitor projects. This is an application, not a seeded personal dashboard. Without configuration it shows explicit, data-free setup states and refuses writes.
 
-> **Release status:** local implementation and verification, not a deployed or independently security-audited release. Hosted Auth/Storage/Realtime, production scheduling/push, and native device behavior require the checks in [the verification ledger](docs/IMPLEMENTATION.md). No signed Android/iOS release or deployment has been produced.
+> **Release status:** an initial debug Android APK has been built and linted on GitHub; the app is not yet deployed to a configured online backend. `setup-debug` means a setup-only shell, not working online signup/chat. Production signing, hosted-provider/device QA and independent security review remain separate. See [verification evidence](docs/IMPLEMENTATION.md).
+
+## APK اندروید و راه‌اندازی فارسی
+
+[**راهنمای قدم‌به‌قدم راه‌اندازی و ساخت APK**](docs/SETUP.fa.md) · [**دانلود پیش‌نسخه‌ها / Releases**](https://github.com/MGnoies12/him-and-i/releases)
+
+یک APK برای هر دو نفر؛ دو حساب مستقل و یک کد اتصال یک‌بارمصرف ۱۲ کاراکتری با اعتبار ۱۵ دقیقه. ثبت‌نام نام و جنسیت اختیاری می‌پرسد؛ بعد از تأیید ایمیل، ظاهر Rose/Dusk و منطقهٔ زمانی انتخاب می‌شود. تاریخ پریود و طول چرخه اختیاری، صاحب‌حسابی و جدا از اطلاعات Auth هستند. جنسیت دسترسی به امکانات مشترک را تغییر نمی‌دهد.
+
+GitHub Actions فایل نصب می‌سازد، **نه سرور دائمی چت**. نسخهٔ `configured-debug` به وب‌اپ HTTPS و Supabase تنظیم‌شده نیاز دارد. فایل `setup-debug` فقط راه‌اندازی را نشان می‌دهد؛ هیچ پیام/حساب ساختگی ندارد.
 
 ## Run the web application
 
@@ -19,7 +27,7 @@ npm run dev
 
 You can inspect all setup screens without credentials. To use real accounts and data:
 
-1. Create a **dedicated Supabase project**. Apply migrations `001` through `008` in filename order, then `supabase/seed.sql`. The seed contains only 15 bilingual game questions, never personal content.
+1. Create a **dedicated Supabase project**. Apply migrations `001` through `010` in filename order, then `supabase/seed.sql`. The seed contains only 15 bilingual game questions, never personal content.
 2. Set the public Supabase URL/publishable key and your canonical app URL in `.env.local`.
 3. Configure Supabase Auth email confirmation, SMTP, and redirect URLs.
 4. Set the **server-only** Supabase secret/service-role key for inspected uploads, authorized media signing, cleanup/jobs, and account deletion.
@@ -30,16 +38,16 @@ See [deployment and Supabase setup](docs/DEPLOYMENT.md) for exact steps, email t
 
 ## Implemented application
 
-| Area                     | Behavior in source                                                                                                                                                                                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Accounts and invitations | Email/password signup, confirmation/PKCE callback, cross-browser token-hash confirmation, recovery, sign-out, profile/timezone settings; two transactional membership slots; random hashed, expiring, revocable, single-use invitations                                     |
-| Home and memories        | Actual-data home; optional relationship counter; memory CRUD, title search, category/favorite filters, tags, grid/timeline views, pagination, private photo/video gallery, upload progress and errors                                                                       |
-| Conversation             | Persisted, paginated/searchable chat; authorized Realtime insert/update subscriptions; UUID-based optimistic retries/deduplication; replies, atomic reactions, image/voice attachments, visible-bottom read receipts, unreads, author deletion; no pretend typing indicator |
-| Letters and calendar     | Private drafts; immediate/scheduled letters with server/RLS release checks, open/cancel states and optional image/gift note; event CRUD, RSVP, all-day/exclusive-end semantics, IANA zones, weekly/monthly recurrence and reminder jobs                                     |
-| Moods and wellbeing      | Optional expiring mood sharing with separate owner-only notes; owner-private cycle history, symptoms, settings, estimates and reminders; two independent minimal-sharing opt-ins, revocation, separate export and permanent record deletion                                 |
-| Music and games          | Shared playlists/favorites of legitimate external music links, no unlicensed streaming; three persistent games with backend reveal rules, duplicate prevention, recent round history and daily-answer-to-memory saving                                                      |
-| Notifications and data   | In-app center, category preferences, per-device registration/revocation; optional Web Push worker; paginated streaming JSON export, password-confirmed account deletion, durable media-erasure queue                                                                        |
-| Native and accessibility | Included Android/iOS projects, branded assets, HTTPS shell/offline fallback, invite deep links, microphone/notification declarations, lifecycle/network handling and native export/share boundary; RTL/LTR, local fonts, focus/keyboard controls, reduced motion            |
+| Area                     | Behavior in source                                                                                                                                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accounts and invitations | Email/password signup, confirmation/PKCE callback, cross-browser token-hash confirmation, recovery, sign-out, profile/timezone settings; two transactional membership slots; random hashed, expiring, revocable, single-use links and 15-minute pairing codes; owner-private personalization |
+| Home and memories        | Actual-data home; optional relationship counter; memory CRUD, title search, category/favorite filters, tags, grid/timeline views, pagination, private photo/video gallery, upload progress and errors                                                                                        |
+| Conversation             | Persisted, paginated/searchable chat; authorized Realtime insert/update subscriptions; UUID-based optimistic retries/deduplication; replies, atomic reactions, image/voice attachments, visible-bottom read receipts, unreads, author deletion; no pretend typing indicator                  |
+| Letters and calendar     | Private drafts; immediate/scheduled letters with server/RLS release checks, open/cancel states and optional image/gift note; event CRUD, RSVP, all-day/exclusive-end semantics, IANA zones, weekly/monthly recurrence and reminder jobs                                                      |
+| Moods and wellbeing      | Optional expiring mood sharing with separate owner-only notes; owner-private cycle history, symptoms, settings, estimates and reminders; two independent minimal-sharing opt-ins, revocation, separate export and permanent record deletion                                                  |
+| Music and games          | Shared playlists/favorites of legitimate external music links, no unlicensed streaming; three persistent games with backend reveal rules, duplicate prevention, recent round history and daily-answer-to-memory saving                                                                       |
+| Notifications and data   | In-app center, category preferences, per-device registration/revocation; optional Web Push worker; paginated streaming JSON export, password-confirmed account deletion, durable media-erasure queue                                                                                         |
+| Native and accessibility | Included Android/iOS projects, branded assets, HTTPS shell/offline fallback, invite deep links, microphone/notification declarations, lifecycle/network handling and native export/share boundary; RTL/LTR, local fonts, focus/keyboard controls, reduced motion                             |
 
 **Important boundaries:** not end-to-end encrypted. Cycle records never inherit a couple-sharing policy and are excluded from the shared home/account export. Recipients cannot retrieve a scheduled letter or its attachment before release. Storage is private with **server-only uploads and signing**; public clients cannot mint arbitrarily long-lived media links. See [security and privacy](docs/SECURITY.md).
 
@@ -47,7 +55,7 @@ See [deployment and Supabase setup](docs/DEPLOYMENT.md) for exact steps, email t
 
 Public: `/`, `/login`, `/signup`, `/reset-password`, `/update-password`, `/invite/[token]`, `/privacy`.
 
-Authenticated when configured: `/home`, `/chat`, `/memories`, `/memories/new`, `/memories/[id]`, `/letters`, `/calendar`, `/mood`, `/music`, `/games`, `/cycle`, `/notifications`, `/settings`.
+Authenticated when configured: `/home`, `/chat`, `/memories`, `/memories/new`, `/memories/[id]`, `/letters`, `/calendar`, `/mood`, `/music`, `/games`, `/cycle`, `/notifications`, `/settings`, `/onboarding`, `/pairing`.
 
 The unconfigured preview intentionally exposes only data-free setup views, not an authentication bypass. Password changes still require a verified server session.
 
@@ -79,7 +87,7 @@ DATABASE_TEST_URL='postgres://postgres:YOUR_LOCAL_TEST_PASSWORD@127.0.0.1:5432/p
 
 The runner refuses remote hosts and creates/drops its own random database. Do not use personal or production data. [Testing details and hosted acceptance checklist](docs/TESTING.md) distinguish SQL execution, mocked provider tests and genuine hosted integration.
 
-GitHub Actions includes read-only-permission web/database/browser checks and a **manual**, unsigned native compilation workflow. They do not deploy, merge, sign, or use production credentials. Workflow files have been added; remote CI results are not claimed.
+GitHub Actions includes read-only web/database/browser checks, branch-based debug APK builds, and manual native checks. Preview publication requires explicit intent and successful web checks for the exact source commit; only that job has repository-write permission. It never deploys or merges production. See the [verified initial Android run](https://github.com/MGnoies12/him-and-i/actions/runs/40071251382) and the current Actions/Release metadata for later results.
 
 ## Android and iOS
 
@@ -94,7 +102,7 @@ npm run native:android      # Android Studio: JDK 21, SDK 36, min SDK 24
 npm run native:ios          # macOS + Xcode required; iOS deployment target 15
 ```
 
-Identifiers/domains are clearly marked owner placeholders. Change the committed native identifiers before changing `CAPACITOR_APP_ID`. See [mobile build, signing, domain association and device testing](docs/MOBILE.md). Native APNs/FCM **registration** exists; server delivery adapters are not implemented, and no native push delivery is claimed. The local-notification plugin is configured but not scheduled by the application.
+The repository-based app ID is `io.github.mgnoies12.himandi`; the deployment domain remains an operator placeholder. If you choose a different ID, update the committed native projects and `CAPACITOR_APP_ID` together. See [mobile build, signing, domain association and device testing](docs/MOBILE.md). Native APNs/FCM **registration** exists; server delivery adapters are not implemented, and no native push delivery is claimed. The local-notification plugin is configured but not scheduled by the application.
 
 ## Code map
 

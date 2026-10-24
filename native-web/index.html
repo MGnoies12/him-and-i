@@ -11,7 +11,7 @@
         min-height: 100vh;
         display: grid;
         place-items: center;
-        background: #fff8f2;
+        background: radial-gradient(ellipse at top, #f8dde5 0, #fff8f2 68%);
         color: #59404a;
         font:
           16px/2 Tahoma,
@@ -21,6 +21,11 @@
       main {
         max-width: 460px;
         padding: 40px 25px;
+        margin: 24px;
+        border: 1px solid #ead5da;
+        border-radius: 26px;
+        background: #fffaf6;
+        box-shadow: 0 20px 60px #59404a0d;
       }
       h1 {
         font:
@@ -41,6 +46,23 @@
         margin: 20px 0;
         font-size: 12px;
       }
+      .badge {
+        font-size: 12px;
+        color: #9e526e;
+      }
+      a {
+        display: inline-block;
+        background: #9e526e;
+        color: white;
+        padding: 9px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        margin: 6px 0 18px;
+      }
+      a:focus-visible {
+        outline: 3px solid #59404a;
+        outline-offset: 5px;
+      }
       small {
         color: #9e526e;
       }
@@ -48,12 +70,23 @@
   </head>
   <body>
     <main>
+      <span class="badge">نسخهٔ آزمایشی · نیازمند راه‌اندازی</span>
       <h1 dir="ltr">HIM &amp; I</h1>
       <p>خانه‌ی کوچک ما هنوز به سرور امن متصل نشده است.</p>
+      <p>
+        این فایل برای هر دو گوشی یکسان است؛ اما ورود و چت آنلاین هنوز فعال نیست. پس از راه‌اندازی
+        سرویس، نسخهٔ متصل به سرور را بسازید و نصب کنید.
+      </p>
       <p lang="en" dir="ltr">
         This native shell is not configured. Set the trusted HTTPS web origin and sync the native
         project. No private data is stored on this setup screen.
       </p>
+      <a
+        href="https://github.com/MGnoies12/him-and-i/blob/arena/059cdeab-him-and-i/docs/SETUP.fa.md"
+        target="_blank"
+        rel="noopener noreferrer"
+        >راهنمای فعال‌سازی امن</a
+      >
       <code>CAPACITOR_SERVER_URL=https://your-domain.example<br />npm run native:sync</code
       ><small>برای ما، با مراقبت · Built with care, for us.</small>
     </main>

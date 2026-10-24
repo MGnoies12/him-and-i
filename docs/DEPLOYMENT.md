@@ -38,7 +38,9 @@ Apply these files in order with the Supabase SQL editor, or the operator-install
 6. `202610240006_atomic_mutations.sql`: atomic reaction/RSVP RPCs, direct-write date/link validation and batch cleanup acknowledgement.
 7. `202610240007_trusted_signing.sql`: removes direct client Storage reads/signing; fixes the bucket cap at 4 MiB.
 8. `202610240008_empty_space_erasure.sql`: removes the relationship date and empty conversation/space after the last account is deleted, with a serialized concurrent-deletion check.
-9. `supabase/seed.sql`: 15 public bilingual game questions; no personal example rows.
+9. `202610240009_personalization_pairing.sql`: owner-private presentation/health opt-in, atomic profile completion, optional manually confirmed estimates and 15-minute code RPC.
+10. `202610240010_deletion_lock_order.sql`: couple-before-cascade/invitation lock ordering for concurrent account deletion and invitation acceptance.
+11. `supabase/seed.sql`: 15 public bilingual game questions; no personal example rows.
 
 CLI alternative, from this checkout, after installing the current compatible Supabase CLI and authenticating **outside chat**:
 
@@ -65,7 +67,7 @@ For cross-browser email completion, use Supabase's one-time token-hash template 
 
 ```text
 Confirmation:
-{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/home
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding
 
 Recovery:
 {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/update-password
@@ -133,3 +135,9 @@ For serverless deployment, select Next.js, use `npm run build`, set public varia
 ## 6. Release gates
 
 Supply operator-selected app IDs/domains, controller/contact/hosting-region details and backup retention. Verify hosted Auth, Storage (including direct-signing denial), Realtime isolation/cleanup, the scheduler and optional provider delivery. Compile/test native devices and review store health-data/required-API disclosures. Review dependent library advisories at release. These are external operational steps, not already completed work.
+
+## APK readiness and owner setup
+
+See [SETUP.fa.md](SETUP.fa.md) for the Persian checklist. `/api/health` returns `503` / `ready:false` for missing public config, server key or private-preferences schema access. Its successful probe retrieves zero rows, uses a five-second timeout and a thirty-second process cache, and sends `Cache-Control: no-store`. It checks configuration/schema reachability only—not SMTP, Realtime, Storage or full migration/version drift. Apply **all** migrations and run hosted acceptance.
+
+Set the public repository variable `CAPACITOR_SERVER_URL` to the final, trusted HTTPS origin, then rebuild from the feature branch. Do not use ephemeral previews for an installed app. Do not put server/service-role/signing secrets in that variable or public configuration. Public prerelease publication is explicitly gated; no automatic production deployment is configured.

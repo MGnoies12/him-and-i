@@ -62,3 +62,11 @@ Jobs are `POST /api/jobs/reminders` with a 32+ character bearer secret. The data
 Account and cycle exports are separate, ordered, paginated JSON streams. Page offsets advance by the rows actually returned, so a provider's smaller row cap does not silently truncate the export. This is not a consistent multi-table snapshot during concurrent edits. Media bytes and invitation/device/authentication secrets are excluded. The native export adapter writes only an app-cache file for user-initiated sharing, deletes it afterward, and clears interrupted-share leftovers at startup.
 
 The UI currently bounds letters at 100, events at 500, mood history at 60, recent game sessions at 30 and notifications at 100. Music/cycle views remain subject to the project's configured row limit; full authorized JSON exports paginate. These view bounds do not delete underlying records. Large-history filtering/pagination on those secondary views is future work, not an implemented infinite archive.
+
+## Private onboarding and presentation
+
+`/onboarding` completes name, optional gender, locale/timezone and personal layout in an authenticated atomic RPC. `profile_preferences` is owner-only; gender is not a membership/authorization role. Auto suggests Dusk for male and Rose otherwise, with an override for every account. Navigation order varies without removing shared features. Private cycle navigation appears only after explicit tracking opt-in; existing private records remain accessible from settings for management/deletion.
+
+Period dates never enter Auth metadata or the shared profile. Optional date/known-length entry can enable an explicitly approximate owner-only estimate. Unknown lengths save no prediction; irregular choices suppress it. Disabling tracking revokes minimal sharing/predictions/reminders while preserving history until explicit deletion.
+
+`/pairing` offers two distinct paths: one account creates the space and a 15-minute 60-bit code, the other signs in and redeems it without first creating a competing space. Codes use domain-separated hashes and the existing transactional invitation boundary; links remain 48-hour/256-bit alternatives. Couple-before-invitation/profile-cascade locks prevent deletion/acceptance deadlocks. Pairing establishes durable account membership; the code is not a repeated chat login.

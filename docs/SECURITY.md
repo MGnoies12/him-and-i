@@ -6,7 +6,7 @@ This is an implemented, locally tested authorization design, **not** an independ
 
 1. **Browser/native UI:** untrusted. Controls and hidden views are never the data boundary. Zod validates input again on the server. Origin checks reject missing/cross-origin state changes; JSON and multipart bodies are byte-bounded while being read.
 2. **User server client:** verifies `auth.getUser()` and preserves that user's JWT for RLS. Build/start configuration rejects private/service-role keys in either public key variable and credentials embedded in public URLs before a client bundle is emitted; runtime public configuration also fails closed. Cookie sessions are SameSite=Lax and Secure on HTTPS/production; no authentication token is written to localStorage. Supabase SSR cookies are JavaScript-readable for the authorized Realtime client, so preventing XSS remains essential.
-3. **Database:** every one of the 30 application tables has RLS. Grants and immutable-identity triggers restrict direct writes; SECURITY DEFINER functions use an empty search path, explicit identity/membership checks, and deliberately scoped EXECUTE grants. Internal helpers are not executable by public/anonymous/authenticated clients.
+3. **Database:** every one of the 31 application tables has RLS. Grants and immutable-identity triggers restrict direct writes; SECURITY DEFINER functions use an empty search path, explicit identity/membership checks, and deliberately scoped EXECUTE grants. Internal helpers are not executable by public/anonymous/authenticated clients.
 4. **Trusted service client:** server-only; needed for uploads/signing, deletion and worker duties. No service key is shipped in a bundle, native binary or `NEXT_PUBLIC_*` variable. Use a dedicated Supabase project: initial migrations deliberately revoke broad default grants in `public`, which is unsuitable for an unrelated existing application sharing that schema.
 5. **Providers/operators:** SMTP, Supabase Auth/Storage/Realtime, web push providers, reverse proxies and backups are separate operational trust boundaries. Local SQL and mocked HTTP tests do not prove their hosted configuration.
 
@@ -15,6 +15,16 @@ This is an implemented, locally tested authorization design, **not** an independ
 Random 32-byte URL-safe tokens; only SHA-256 hashes at rest; 48-hour expiry; revocable and single-use. Creating an invitation revokes older unconsumed invitations. Hashes cannot be selected by ordinary users. A token alone provides no read access. Authentication and transactional acceptance are mandatory. Constraints, row locks and a per-user advisory lock prevent reuse, overcapacity, or concurrent joins into two spaces. There is no public `couple_members` INSERT policy.
 
 Invite paths, auth callback codes/token hashes and signed media URLs are secrets. The app uses `Referrer-Policy: no-referrer`, does not log request bodies/provider errors, and includes no analytics. **Configure your host/access logs to redact `/invite/*`, `/auth/*` query strings, Authorization/Cookie headers and signed Storage query strings.** Next development servers and third-party infrastructure may log URLs independently of application code; never use real invitations or health content in test traces.
+
+Typing codes use 12 symbols from a 32-character alphabet (**60 random bits**), a domain-separated SHA-256 hash, and **15-minute** expiry. Codes and links share the same transactional acceptance/capacity rules; creating either revokes earlier pending invitations. The authenticated HTTP endpoint counts even malformed code attempts before validation (10/minute/account/process); apply distributed/provider protections before public use. Codes are not chat passwords and are unnecessary after successful membership.
+
+Profile deletion locks the couple before any profile cascades, and invite acceptance locks couple before invitation. Migration 010 prevents cross-cascade deadlocks found during genuine PostgreSQL concurrency testing.
+
+## Private personalization
+
+`profile_preferences` is owner-only, not part of a shared profile or Realtime publication. Gender and Rose/Dusk suggestions affect presentation only; both accounts retain the same shared permissions, and anyone can override the suggestion. Optional health fields are collected only after authentication, never sent to signup/Auth metadata, URLs or analytics.
+
+The private module is a separate opt-in regardless of gender. A single date produces an estimate only with an explicitly supplied usual length; an unknown length can save a date without predicting. Self-reported irregularity suppresses the date estimate. Disabling tracking immediately revokes minimal sharing, predictions and reminders but retains private history until explicit deletion. Account export excludes health records and tracking/reminder consent flags; the separate owner-private health export includes them.
 
 ## Letters and games
 

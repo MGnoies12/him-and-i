@@ -14,6 +14,8 @@ npm test
 
 Vitest/RTL cover public-key/redirect/push-SSRF configuration, input/media validation, actual Sharp decoding/metadata stripping and WAV inspection, timezone/Persian-calendar/DST/all-day recurrence, cycle estimation, accessible primitives, server auth/origin/size checks, auth handlers with an isolated provider mock, authorized fixed-lifetime signing with a mocked service client, complete export pagination/stream failure, and native filesystem/share boundaries with mocked plugins.
 
+Additional tests cover signup-to-private-onboarding redirects, owner-only personalization, optional single-date estimates, code normalization/hashing and invalid-attempt limits, readiness probes, APK preparation/version labels, UI form payloads, and separate export consent scopes. The SQL suite also exercises atomic profile completion/rollback, private preferences, opt-out revocation, 15-minute expiry and link/code replacement.
+
 Mocks verify our control flow and parameters; they do **not** verify SMTP, a deployed Supabase REST/Storage service, a native OS permission/share implementation, or provider delivery.
 
 ### SQL/RLS integration
@@ -39,16 +41,17 @@ DATABASE_TEST_URL='postgres://postgres:YOUR_LOCAL_TEST_PASSWORD@127.0.0.1:5432/p
 
 The runner accepts only localhost/loopback URLs, creates a randomly named disposable database, applies all migrations/seed and uses separate connections. It then closes connections before dropping only that database. A database-creating test role is required. Database roles may remain in that disposable local cluster, so do not use an instance containing personal databases.
 
-Six concurrency scenarios:
+Seven concurrency scenarios:
 
 1. Two people race the same token: exactly one winner.
 2. One person races invitations to two spaces: at most one membership.
 3. Two tokens race one remaining slot: no overcapacity and no consumed losing token.
 4. 41 concurrent message inserts: exactly 40 accepted, one rate-limited.
 5. Simultaneous push workers: no duplicate outbox claim.
-6. Simultaneous partner account deletion: no leftover empty couple/relationship metadata.
+6. Simultaneous partner account deletion: no leftover empty couple/relationship metadata or cascade deadlock.
+7. Invitation acceptance racing inviter deletion: consistent lock order and only valid serialized outcomes.
 
-The local implementation was exercised with a temporary PostgreSQL 18.4 binary installed under ignored `.arena/`; that disposable launcher/database is not a project dependency or portable artifact. The committed runner is `scripts/postgres-tests.mjs`; CI defines a PostgreSQL 17 service. A standalone local PostgreSQL or Docker test instance can reproduce the committed runner without the ephemeral sandbox files.
+Current migrations and all seven races were exercised repeatedly with a temporary PostgreSQL 17.10 binary installed under ignored `.arena/` (the earlier baseline also ran on 18.4); that disposable launcher/database is not a project dependency or portable artifact. The committed runner is `scripts/postgres-tests.mjs`; CI defines a PostgreSQL 17 service. A standalone local PostgreSQL or Docker test instance can reproduce the committed runner without the ephemeral sandbox files.
 
 ### Real browser checks
 
@@ -59,7 +62,7 @@ npm run test:e2e
 npm run test:e2e:sandbox
 ```
 
-Playwright starts/reuses the app with **no Supabase credentials**, in desktop Chromium and a mobile Chromium viewport. It checks real rendering/interactions: default Persian/RTL, English/LTR persistence, explicit configuration boundaries, missing-config API responses, CSRF rejection, 13 route layouts/navigation/runtime errors, memory filters/form, letter modal focus/Escape, Persian month navigation, cycle consent defaults, no fake music/game success, invitation entry/invalid route, offline feedback, localStorage token absence in setup mode, security headers and reduced motion. Axe runs WCAG A/AA checks on 17 public/setup routes, without excluding contrast rules.
+Playwright starts/reuses the app with **no Supabase credentials**, in desktop Chromium and a mobile Chromium viewport. It checks real rendering/interactions: default Persian/RTL, English/LTR persistence, explicit configuration boundaries, missing-config API responses, CSRF rejection, 15 route layouts/navigation/runtime errors, memory filters/form, letter modal focus/Escape, Persian month navigation, cycle consent defaults, no fake music/game success, invitation entry/invalid route, offline feedback, localStorage token absence in setup mode, security headers and reduced motion. Axe runs WCAG A/AA checks on 19 public/setup routes, without excluding contrast rules.
 
 The sandbox wrapper uses npm-packaged Chromium and its bundled Linux library pack because the environment cannot download browser binaries from arbitrary hosts. It uses only the rendering flags explicitly listed in the script, not a blanket disable-web-security configuration. `--no-sandbox` is only for this isolated test runner; it is not a user browser setting.
 
@@ -72,6 +75,8 @@ Use newly created synthetic accounts A and B in space One, C and D in space Two,
 ### Auth and membership
 
 - Exercise real signup, SMTP confirmation, expired/replayed email links, invalid credentials, password reset/update and short JWT refresh/expiry. Verify CSRF failures and cookie settings.
+- Exercise signup with/without gender, private setup with/without a date, unknown-length and irregular choices, Rose/Dusk overrides, timezone changes and later tracking opt-out. Check that no period fields reach Auth metadata or a partner query.
+- Pair two accounts using a code; verify expiry, normalization, replacement by a new code/link and persistence after relaunch.
 - Confirm protected pages redirect anonymous users and every data/mutation/media/export API rejects them.
 - Invite E without revealing any personal data; accept only after sign-in. Replay/expire/revoke and race tokens from independent clients. Verify the losing request cannot consume a usable remaining invitation or create a second membership.
 - Query PostgREST directly as A and C, not just through the UI. Ensure profiles, memberships and all couple data stay separated.

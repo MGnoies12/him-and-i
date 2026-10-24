@@ -4,21 +4,21 @@
 
 Included Capacitor platform **source** projects, branded icon/splash assets, nine plugins, a trusted remote HTTPS shell, an explicit setup/offline fallback, invite deep-link handlers (warm and cold launch), foreground/network refetch, keyboard/status-bar configuration, microphone and notification declarations, token registration/revocation, and a cache-only export/share adapter.
 
-The native projects have been generated and synced, **not compiled or device-tested in this Linux environment**. There is no APK/AAB/IPA release, signing configuration, App Store approval or native push delivery proof. The manual GitHub native workflow is an unexecuted build definition, not evidence of a successful native build.
+The platform projects have been generated/synced locally. An initial **Android debug build and lint succeeded on GitHub** ([run 40071251382](https://github.com/MGnoies12/him-and-i/actions/runs/40071251382)); current preview artifacts/releases record their own source SHA. This is not device-installation proof, production signing or native push delivery. iOS remains uncompiled/device-untested. No AAB/IPA/store release is claimed.
 
 The Next.js server/API cannot be statically exported into Capacitor. The configured shell loads the operator's HTTPS deployment. This architecture requires connectivity and a trustworthy web origin; it is not an offline-first native database or a guarantee of store acceptance.
 
 ## Prerequisites
 
 - Node/npm matching the repository, `npm ci`.
-- An already configured, trusted HTTPS staging/production web deployment with Auth redirect settings and the eight migrations.
+- An already configured, trusted HTTPS staging/production web deployment with Auth redirect settings and all ten migrations (001–010).
 - Android: JDK **21**, Android Studio/SDK **36**, accepted SDK licenses, Android device/emulator. Minimum supported Android API is **24**. The committed Gradle wrapper is 8.14.3 and Android Gradle Plugin 8.13.0.
 - iOS: **macOS and a compatible Xcode**, iOS 15+ target, simulator/device, Swift Package Manager dependency access. A physical release needs an Apple Developer team, valid bundle ID, profiles/entitlements and signing outside Git.
 - Real-device microphone/network/push testing. A desktop Chromium mobile viewport is not an iPhone/WebView test.
 
 ## Choose identifiers and trusted origin
 
-Initial placeholders are `io.github.mgnoies12.himandi` and `himandi.example`; they are not claimed as real registrations.
+The chosen repository-based identifier is `io.github.mgnoies12.himandi`; `himandi.example` remains a deployment-domain placeholder. These are not claims of store registration or verified domain association. Keep the ID for compatible installations, or rename both native projects deliberately.
 
 1. Choose your own reverse-DNS app identifier and domain.
 2. In Android Studio, refactor `io.github.mgnoies12.himandi`, including `MainActivity.java` and its package path; update `namespace` and `applicationId` in `android/app/build.gradle`. Check manifest references.
@@ -48,7 +48,18 @@ cd android
 # Output: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-These commands are instructions, not claimed completed builds. `local.properties`, signing keystores, provider files and build outputs are ignored. Release signing must be configured with an external keystore/secret store; do not commit it or upload it to chat. Increment versionCode/versionName and complete Play Console disclosures before distribution. The app disables Android backup and cleartext traffic, requests microphone/notification permissions, and exposes only the `exports/` app-cache directory through FileProvider—not a broad filesystem path.
+The commands above are also executed by the Android APK workflow; check its individual run/asset metadata for build evidence. `local.properties`, signing keystores, provider files and build outputs are ignored. Release signing must be configured with an external keystore/secret store; do not commit it or upload it to chat. Increment versionCode/versionName and complete Play Console disclosures before distribution. The app disables Android backup and cleartext traffic, requests microphone/notification permissions, and exposes only the `exports/` app-cache directory through FileProvider—not a broad filesystem path.
+
+## Downloadable preview pipeline
+
+`.github/workflows/android-apk.yml` builds on pushes to `arena/059cdeab-him-and-i`. It runs tests/schema checks, prepares mode/version metadata, syncs, compiles/lints with JDK 21/SDK 36, verifies the APK signature/package/minimum SDK and uploads a 14-day artifact. Explicit `[apk-release]` commit intent or a manual `publish` input requests a labelled prerelease, gated on successful matching web/PostgreSQL/browser checks. No production branch is merged or deployed.
+
+- `HIM-and-I-setup-debug.apk`: bundled setup instructions only; **no online signup/chat**.
+- `HIM-and-I-configured-debug.apk`: targets the operator's trusted HTTPS app, starting at `/home` and redirecting to login as needed. `/api/health` must pass before build, but it does not verify end-to-end Auth/Realtime/Storage.
+- `SHA256SUMS.txt`, `build-info.json`, `APK-VERIFICATION.txt`, `APK-MANIFEST.txt`: checksum, source/mode/version and signature/package evidence.
+- CI debug keys are temporary. Different builds may require uninstalling the old APK. Do not treat a debug build as production or use it for sensitive real-user acceptance; configure operator-managed release signing and complete device QA first.
+
+Use the same APK on both devices, with separate accounts. Read [the Persian guide](SETUP.fa.md) for hosting, Supabase, GitHub variables and rebuilding. An Actions runner or Arena preview is not permanent hosting.
 
 ## Build iOS
 
